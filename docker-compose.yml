@@ -1,0 +1,147 @@
+services:
+  # =====================
+  # PostgreSQL (banco principal)
+  # =====================
+  postgres:
+    image: postgres:16
+    container_name: postgres-n8n
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - proxy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =====================
+  # Redis (cache / filas)
+  # =====================
+  redis:
+    image: redis:7-alpine
+    container_name: redis-n8n
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - proxy
+
+  # =====================
+  # Qdrant (IA, embeddings, vetores)
+  # =====================
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant-n8n
+    restart: unless-stopped
+    volumes:
+      - ./data/qdrant:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__API_KEY=${QDRANT_API_KEY}
+      - QDRANT__SERVICE__ENABLE_CORS=true
+    networks:
+      - proxy
+
+  # =====================
+  # pgAdmin (interface do PostgreSQL)
+  # =====================
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin-n8n
+    restart: unless-stopped
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    volumes:
+      - ./data/pgadmin:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - proxy
+
+  # =====================
+  # n8n principal
+  # =====================
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+
+      # Redis opcional (para filas / execuções distribuídas)
+      - QUEUE_BULL_REDIS_HOST=redis
+      - QUEUE_BULL_REDIS_PORT=${REDIS_PORT}
+      - QUEUE_BULL_REDIS_PASSWORD=${REDIS_PASSWORD}
+
+      # Autenticação n8n
+      - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE}
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+
+      # URLs e host
+      - N8N_HOST=${N8N_HOST}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - N8N_EDITOR_BASE_URL=https://${N8N_HOST}
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - N8N_PUBLIC_API_DISABLED=false
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+    volumes:
+      - ./data/n8n:/home/node/.n8n
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      qdrant:
+        condition: service_started
+    networks:
+      - proxy
+
+  # =====================
+  # WAHA (WhatsApp HTTP API)
+  # =====================
+  waha:
+    image: devlikeapro/waha:latest
+    container_name: waha-n8n
+    restart: unless-stopped
+    environment:
+      # Configurações de porta e webhook
+      - WAHA_API_PORT=${WAHA_API_PORT}
+      - WAHA_LOG_LEVEL=info
+      - WAHA_WEBHOOK_URL=${WAHA_WEBHOOK_URL}
+      # Segurança (Puxando do seu .env)
+      - WAHA_AUTHENTICATION=api_key
+      - WAHA_API_KEY=${WAHA_API_KEY}
+      - WAHA_DASHBOARD_USERNAME=${WAHA_DASHBOARD_USERNAME}
+      - WAHA_DASHBOARD_PASSWORD=${WAHA_DASHBOARD_PASSWORD}
+      - WHATSAPP_SWAGGER_USERNAME=${WHATSAPP_SWAGGER_USERNAME}
+      - WHATSAPP_SWAGGER_PASSWORD=${WHATSAPP_SWAGGER_PASSWORD}
+      # Banco de dados
+      - WAHA_POSTGRES_HOST=postgres
+      - WAHA_POSTGRES_USER=${POSTGRES_USER}
+      - WAHA_POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - WAHA_POSTGRES_DB=${POSTGRES_LOG_DB}
+#    ports:
+#      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
