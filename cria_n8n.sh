@@ -86,6 +86,13 @@ services:
       - WEBHOOK_URL=${WEBHOOK_URL}
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - EXECUTIONS_PROCESS=main
+
+      # Otimizações para Agentes de IA (AI Agents / RAG / WAHA)
+      - N8N_DEFAULT_BINARY_DATA_MODE=filesystem
+      - N8N_PAYLOAD_SIZE_MAX=16
+      - N8N_COMMUNITY_PACKAGES_ENABLED=true
+      - NODE_FUNCTION_ALLOW_EXTERNAL=*
+      - NODE_FUNCTION_ALLOW_BUILTIN=*
     volumes:
       - ./data/n8n:/home/node/.n8n
     networks:
