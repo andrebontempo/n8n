@@ -24,6 +24,9 @@ QDRANT_PORT=6333
 
 WAHA_WEBHOOK_URL=https://n8n000.bontech.com.br/webhook/waha
 WAHA_API_PORT=3000
+
+# Chave de autenticação do Task Runner / Sandbox
+N8N_RUNNERS_AUTH_TOKEN=SenhaSeguraRunners123!
 EOF
 
 # 3️⃣ Cria docker-compose.yml
