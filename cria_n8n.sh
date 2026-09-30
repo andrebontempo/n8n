@@ -24,9 +24,6 @@ QDRANT_PORT=6333
 
 WAHA_WEBHOOK_URL=https://n8n000.bontech.com.br/webhook/waha
 WAHA_API_PORT=3000
-
-# Chave de autenticação do Task Runner / Sandbox
-N8N_RUNNERS_AUTH_TOKEN=SenhaSeguraRunners123!
 EOF
 
 # 3️⃣ Cria docker-compose.yml
@@ -96,11 +93,6 @@ services:
       - N8N_COMMUNITY_PACKAGES_ENABLED=true
       - NODE_FUNCTION_ALLOW_EXTERNAL=*
       - NODE_FUNCTION_ALLOW_BUILTIN=*
-
-      # Task Runner Sandbox (Isolamento para código JS/Python)
-      - N8N_RUNNERS_MODE=external
-      - N8N_RUNNERS_AUTH_TOKEN=${N8N_RUNNERS_AUTH_TOKEN:-token_secreto_runners_n8n}
-      - N8N_RUNNERS_BROKER_LISTEN_ADDRESS=0.0.0.0
     volumes:
       - ./data/n8n:/home/node/.n8n
     networks:
@@ -108,21 +100,6 @@ services:
     depends_on:
       - postgres
       - qdrant
-
-  # =====================
-  # n8n Task Runner (Sandbox para código JS/Python)
-  # =====================
-  n8n-runner:
-    image: n8nio/runners:latest
-    container_name: n8n-runner-000
-    restart: always
-    environment:
-      - N8N_RUNNERS_TASK_BROKER_URI=http://n8n:5679
-      - N8N_RUNNERS_AUTH_TOKEN=${N8N_RUNNERS_AUTH_TOKEN:-token_secreto_runners_n8n}
-    depends_on:
-      - n8n
-    networks:
-      - proxy
 
   # =====================
   # WAHA (WhatsApp HTTP API)
