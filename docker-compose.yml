@@ -81,15 +81,10 @@ services:
       - DB_POSTGRESDB_USER=${POSTGRES_USER}
       - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
 
-      # Redis opcional (para filas / execuções distribuídas)
+      # Redis (para filas / execuções distribuídas)
       - QUEUE_BULL_REDIS_HOST=redis
       - QUEUE_BULL_REDIS_PORT=${REDIS_PORT}
       - QUEUE_BULL_REDIS_PASSWORD=${REDIS_PASSWORD}
-
-      # Autenticação n8n
-      - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE}
-      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
-      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
 
       # URLs e host
       - N8N_HOST=${N8N_HOST}
@@ -161,8 +156,6 @@ services:
       - WAHA_POSTGRES_USER=${POSTGRES_USER}
       - WAHA_POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - WAHA_POSTGRES_DB=${POSTGRES_LOG_DB}
-#    ports:
-#      - "3000:3000"
     depends_on:
       postgres:
         condition: service_healthy
